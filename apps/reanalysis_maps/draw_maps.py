@@ -16,6 +16,7 @@ import os
 import numpy as np
 import uuid
 from threading import Lock
+import collections
 import xarray as xr
 import datetime as dt
 import scipy.ndimage as ndimage
@@ -29,82 +30,92 @@ from cartopy import crs as ccrs
 import cartopy.feature as cfeature
 from cartopy import util as cu
 
-import metpy
 import metpy.calc as calc
-
 import streamlit as st
 
 from nmc_met_graphics.cmap.cm import gradient
 from nmc_met_graphics.plot.util import add_mslp_label
-from nmc_met_graphics.magics import dynamics
+from nmc_met_graphics.magics import dynamics, thermal, pv, moisture
 
 # thread lock
 lock = Lock()
 
-def load_variables(date_obj, map_region=[50, 160, 6, 60]):
+
+def _get_image_file(infile):
     """
-    Load the variables from UAlbany's opendap server
+    Read image file and remove the file.
+    """
+    infile = infile + ".png"
+    if os.path.isfile(infile):
+        image = Image.open(infile)
+        os.remove(infile)
+        return image
+    else:
+        return None
 
-    Args:
-        date_obj (datetime): a datetime object
+def draw_weather_analysis(date_obj, data, map_region):
+    """
+    Draw weather analysis map.
     """
 
-    # To make parsing the date easier, convert it into a datetime object
-    # and get it into various formats
-    yyyy = date_obj.year
+    # get the thread lock
+    lock.acquire()
 
-    # For loading multiple files in
-    files = []
+    # image dictionary
+    images = collections.OrderedDict()
 
-    # Loop through each variable specified
-    variables = ['u','v','g','t','pmsl','pwat']
-    for var in variables:
-        #Append file into list of files to open
-        filepath = "http://thredds.atmos.albany.edu:8080/thredds/dodsC/CFSR/%s/%s.%s.0p5.anl.nc"%(yyyy,var,yyyy)
-        files.append(filepath)
-        
-    # Load in the variable(s) as an xarray Dataset and assign them into "data"
-    st.info("Load CFSR data from http://thredds.atmos.albany.edu:8080/thredds/dodsC/")
-    data = xr.open_mfdataset(files, combine='by_coords', cache=False)
-    
-    # construct sub region
-    sub_region = {'lon':slice(map_region[0], map_region[1]),
-                  'lat':slice(map_region[2], map_region[3])}
+    try:
+        # draw 2PVU surface pressure
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        pv.draw_pres_pv2(
+            data['pres_pv2'].values, data['pres_pv2']['lon'].values, data['pres_pv2']['lat'].values,
+            map_region=map_region, date_obj=date_obj, outfile=outfile)
+        images['pres_pv2'] = _get_image_file(outfile)
 
-    # Subset and load data
-    data = data.sel(time=date_obj) ;  my_bar = st.progress(0)
-    u200 = data['u'].sel(lev=200, **sub_region).load()
-    my_bar.progress(10)
-    v200 = data['v'].sel(lev=200, **sub_region).load()
-    my_bar.progress(20)
-    gh200 = data['g'].sel(lev=200, **sub_region).load()
-    my_bar.progress(30)
-    u500 = data['u'].sel(lev=500, **sub_region).load()
-    my_bar.progress(40)
-    v500 = data['v'].sel(lev=500, **sub_region).load()
-    my_bar.progress(50)
-    gh500 = data['g'].sel(lev=500, **sub_region).load()
-    my_bar.progress(60)
-    u850 = data['u'].sel(lev=850, **sub_region).load()
-    my_bar.progress(70)
-    v850 = data['v'].sel(lev=850, **sub_region).load()
-    my_bar.progress(80)
-    t850 = data['t'].sel(lev=850, **sub_region).load()
-    my_bar.progress(90)
-    mslp = data['pmsl'].sel(**sub_region).load()
-    my_bar.progress(95)
-    pwat = data['pwat'].sel(**sub_region).load()
-    my_bar.progress(100)
-    
-    # convert units
-    t850.metpy.convert_units('degC')
-    pwat.metpy.convert_units('mm')
-    mslp.metpy.convert_units('hPa')
-    
-    # close data
-    #data.close()
+        # draw 200hPa wind field
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        dynamics.draw_wind_upper(
+            data['u200'].values, data['v200'].values, 
+            data['u200']['lon'].values, data['u200']['lat'].values,
+            gh=data['gh200'].values, map_region=map_region, date_obj=date_obj,
+            head_info="200hPa Wind[m/s] and Height[gpm]", outfile=outfile)
+        images['wind_200'] = _get_image_file(outfile)
 
-    return u200, v200, gh200, u500, v500, gh500, u850, v850, t850, mslp, pwat
+        # draw 850hPa wind field
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        dynamics.draw_wind_high(
+            data['u850'].values, data['v850'].values, 
+            data['u850']['lon'].values, data['u850']['lat'].values,
+            gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
+            head_info="850hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
+        images['wind_850'] = _get_image_file(outfile)
+
+        # draw 850hPa temperature field
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        thermal.draw_temp_high(
+            data['t850'].values, data['t850']['lon'].values, data['t850']['lat'].values,
+            gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
+            head_info="850hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
+        images['temp_850'] = _get_image_file(outfile)
+
+        # draw precipitable water field
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        moisture.draw_pwat(
+            data['pwat'].values, data['pwat']['lon'].values, data['pwat']['lat'].values,
+            map_region=map_region, date_obj=date_obj, outfile=outfile)
+        images['pwat'] = _get_image_file(outfile)
+
+        # draw mean sea level pressure field
+        outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
+        dynamics.draw_mslp(
+            data['mslp'].values, data['mslp']['lon'].values, data['mslp']['lat'].values,
+            gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
+        images['mslp'] = _get_image_file(outfile)
+    finally:
+        lock.release()
+
+    # return image
+    return images
 
 
 #Spatially smooth a 2D variable
@@ -329,37 +340,4 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
     return(fig)
 
 
-def draw_wind_upper_map(date_obj, uwind, vwind, gh, map_region):
-    """
-    Draw troposphere upper wind map (like 250hPa).
-
-    Args:
-        data_input ([type]): [description]
-        date_obj ([type]): [description]
-        map_region (list, optional): [description]. Defaults to [70, 140, 20, 60].
-    """
-
-    # draw the figure
-    lock.acquire()
-
-    try:
-        # set tempfile
-        outfile = '/tmp/wind200_%s' % uuid.uuid4().hex
-
-        # draw the figure
-        dynamics.draw_wind_upper(
-            uwind.values, vwind.values, uwind['lon'].values, uwind['lat'].values,
-            gh=gh.values, skip_vector=2, map_region=map_region, date_obj=date_obj,
-            head_info="200hPa Wind[m/s] and Height[gpm]",
-            outfile=outfile)
-        
-        # read image
-        outfile = outfile+".png"
-        image = Image.open(outfile)
-        os.remove(outfile)
-    finally:
-        lock.release()
-    
-    # return image
-    return image
 
