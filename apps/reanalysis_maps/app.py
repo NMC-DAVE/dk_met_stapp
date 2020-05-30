@@ -10,13 +10,19 @@
 
 import sys
 import datetime
+from threading import Lock
 import xarray as xr
 import metpy
 import streamlit as st
 
 sys.path.append('.')
 from nmc_met_graphics.util import  get_map_regions
+from nmc_met_graphics.web import st_state_patch
 import draw_maps
+
+s = st.GlobalState(key="mySate")
+if not s:
+    s.lock = Lock()
 
 
 def  main():
@@ -66,10 +72,9 @@ def  main():
             data['v500'], data['mslp'], data['gh500'], data['u850'], data['v850'], data['pwat'])
         st.pyplot(fig)
 
-        # draw weather analysis map
-        images = draw_maps.draw_weather_analysis(date_obj, data, map_region)
-        for key in images:
-            st.image(images[key], use_column_width=True)
+        # draw weather analysi maps
+        with s.lock:
+            draw_maps.draw_weather_analysis(date_obj, data, map_region)
     else:
        st.info('请点击左侧**绘制天气图**按钮生成或更新图像.')
 
@@ -103,7 +108,7 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
 
     # Subset and load data
     subdata = {}
-    st.info('Load CFSR from http://thredds.atmos.albany.edu:8080/thredds/dodsC/ (taking 20s)')
+    st.info('Load CFSR from http://thredds.atmos.albany.edu:8080/thredds/dodsC/ (taking 30s)')
 
     # wind field
     my_bar = st.progress(0)
