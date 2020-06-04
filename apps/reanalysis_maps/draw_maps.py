@@ -13,10 +13,12 @@ refer to https://github.com/tomerburg/python_gallery
 
 #Import the necessary libraries
 import os
-import numpy as np
 import uuid
+import pickle
 import collections
+import numpy as np
 import xarray as xr
+import pandas as pd
 import datetime as dt
 import scipy.ndimage as ndimage
 from PIL import Image
@@ -24,12 +26,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 import matplotlib.gridspec as gridspec
 
-import streamlit as st
-
 import cartopy
 from cartopy import crs as ccrs
 import cartopy.feature as cfeature
 from cartopy import util as cu
+
+import nmc_met_io.config as CONFIG
+import plotly.express as px
 
 import metpy.calc as calc
 from metpy.units import units
@@ -38,6 +41,31 @@ from nmc_met_graphics.cmap.cm import gradient
 from nmc_met_graphics.plot.util import add_mslp_label
 from nmc_met_graphics.plot.china_map import add_china_map_2cartopy
 from nmc_met_graphics.magics import dynamics, thermal, pv, moisture
+
+
+def draw_observation(data, date_obj):
+    """
+    Draw observation map with plotly
+    """
+
+     # set mapbox token
+    px.set_mapbox_access_token(CONFIG.CONFIG['MAPBOX']['token'])
+
+    data['rain'] = pd.cut(
+        data['PRE_Time_0808'], bins=[0.1, 10, 25, 50, 100, 250, 1200], 
+        labels=['0.1~10', '10~25', '25~50', '50~100', '100~250', '>=250'])
+    df = data[data['rain'].notna()]
+    value_list = {
+        '0.1~10':'lightgreen', '10~25':'yellow', '25~50':'lightskyblue', 
+        '50~100':'blue', '100~250':'magenta', '>=250':'maroon'}
+    fig = px.scatter_mapbox(
+        df, lat="Lat", lon="Lon", color="rain",
+        color_discrete_map = value_list,
+        mapbox_style='satellite-streets', size="PRE_Time_0808", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+        title = 'Accumulated precipitation ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+        width=900, height=700)
+
+    return fig
 
 
 def _get_image_file(infile):
@@ -52,7 +80,7 @@ def _get_image_file(infile):
     else:
         return None
 
-def draw_weather_analysis(date_obj, data, map_region):
+def draw_weather_analysis(date_obj, data, map_region, imagefile):
     """
     Draw weather analysis map.
     """
@@ -65,8 +93,7 @@ def draw_weather_analysis(date_obj, data, map_region):
     pv.draw_pres_pv2(
         data['pres_pv2'].values, data['pres_pv2']['lon'].values, data['pres_pv2']['lat'].values,
         map_region=map_region, date_obj=date_obj, outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['2PVU_surface_pressure'] = _get_image_file(outfile)
 
     # draw 200hPa wind field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -75,8 +102,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u200']['lon'].values, data['u200']['lat'].values,
         gh=data['gh200'].values, map_region=map_region, date_obj=date_obj,
         head_info="200hPa Wind[m/s] and Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['200hPa_wind'] = _get_image_file(outfile)
 
     # draw 500hPa height and temperature
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -85,8 +111,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['gh500']['lon'].values, data['gh500']['lat'].values, 
         map_region=map_region, date_obj=date_obj,
         head_info="500hPa Height[gpm] and Temperature[DegC]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['500hPa_height'] = _get_image_file(outfile)
 
     # draw 500hPa vorticity
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -95,8 +120,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u500']['lon'].values, data['u500']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="500hPa Wind, Vorticity and Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['500hPa_vorticity'] = _get_image_file(outfile)
 
     # draw 700hPa vertical velocity
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -105,8 +129,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['w700']['lon'].values, data['w700']['lat'].values,
         gh=data['gh700'].values, map_region=map_region, date_obj=date_obj,
         head_info="700hPa Wind, Vertical Velocity[Pa/s] and Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['700hPa_vertical_velocity'] = _get_image_file(outfile)
 
     # draw 700hPa wind field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -115,8 +138,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u700']['lon'].values, data['u700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="700hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['700hPa_wind'] = _get_image_file(outfile)
 
     # draw 700hPa temperature field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -124,8 +146,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['t700'].values, data['t700']['lon'].values, data['t700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="700hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['700hPa_Temperature'] = _get_image_file(outfile)
 
     # draw 700hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q700'], data['t700'], 700 * units.hPa) * 100
@@ -135,8 +156,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u700']['lon'].values, data['u700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="700hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['700hPa_relative_humidity'] = _get_image_file(outfile)
 
     # draw 850hPa wind field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -145,8 +165,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u850']['lon'].values, data['u850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="850hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['850hPa_wind'] = _get_image_file(outfile)
 
     # draw 850hPa temperature field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -154,8 +173,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['t850'].values, data['t850']['lon'].values, data['t850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="850hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['850hPa_temperature'] = _get_image_file(outfile)
 
     # draw 850hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q850'], data['t850'], 850 * units.hPa) * 100
@@ -165,18 +183,16 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u850']['lon'].values, data['u850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="850hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['850hPa_relative_humidity'] = _get_image_file(outfile)
 
-    # draw 925hPa specific field
+    # draw 850hPa specific field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
     moisture.draw_sp_high(
         data['u850'].values, data['v850'].values, data['q850'].values*1000.,
         data['q850']['lon'].values, data['q850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="850hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['850hPa_specific_humidity'] = _get_image_file(outfile)
 
     # draw 925hPa temperature field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -184,8 +200,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['t925'].values, data['t925']['lon'].values, data['t925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="925hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['925hPa_temperature'] = _get_image_file(outfile)
 
     # draw 925hPa wind field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -194,8 +209,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u925']['lon'].values, data['u925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="925hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['925hPa_wind'] = _get_image_file(outfile)
 
     # draw 925hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q925'], data['t925'], 925 * units.hPa) * 100
@@ -205,8 +219,7 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['u925']['lon'].values, data['u925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="925hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['925hPa_relative_humdity'] = _get_image_file(outfile)
 
     # draw 925hPa specific field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -215,24 +228,24 @@ def draw_weather_analysis(date_obj, data, map_region):
         data['q925']['lon'].values, data['q925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
         head_info="925hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]", outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['925hPa_specific_humidity'] = _get_image_file(outfile)
 
     # draw precipitable water field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
     moisture.draw_pwat(
         data['pwat'].values, data['pwat']['lon'].values, data['pwat']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['precipitable_water'] = _get_image_file(outfile)
 
     # draw mean sea level pressure field
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
     dynamics.draw_mslp(
         data['mslp'].values, data['mslp']['lon'].values, data['mslp']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
-    image = _get_image_file(outfile)
-    st.image(image, use_column_width=True)
+    images['mean_sea_level_pressure'] = _get_image_file(outfile)
+
+    with open(imagefile, 'wb') as f:
+        pickle.dump(images, f, pickle.HIGHEST_PROTOCOL)
 
 
 #Spatially smooth a 2D variable

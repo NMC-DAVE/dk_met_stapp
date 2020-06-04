@@ -1,5 +1,4 @@
 
-
 # _*_ coding: utf-8 _*_
 
 # Copyright (c) 2020 NMC Developers.
@@ -10,25 +9,26 @@
 """
 
 import sys
-import os
-import uuid
-import pickle
 import datetime
-from multiprocessing import Process
+from threading import Lock
+import multiprocessing
 import xarray as xr
 import metpy
 import streamlit as st
 
+sys.path.append('.')
 from nmc_met_io.retrieve_cmadaas import cmadaas_obs_by_time
 from nmc_met_graphics.util import  get_map_regions
-from nmc_met_graphics.web import SessionState
-
-sys.path.append('.')
+from nmc_met_graphics.web import st_state_patch, SessionState
 import draw_maps
 
-# set session state
-state = SessionState.get(img1=None, img2=None, img3=None)
+s0 = st.GlobalState(key="mySate")
+if not s0:
+    s0.lock = Lock()
 
+s1 = st.State()
+s2 = st.State()
+s3 = st.State()
 
 def  main():
     # application title
@@ -65,60 +65,59 @@ def  main():
     # draw the figures
     if st.sidebar.button('绘制天气图'):
         # load data
-        st.info('载入CFSR数据, http://thredds.atmos.albany.edu:8080/thredds/dodsC/ (taking 30s)')
-        data = load_variables(date_obj, map_region=map_region)
-        
-        # draw the synoptic compsite
-        fig = draw_maps.draw_composite_map(
-            date_obj, data['t850'], data['u200'], data['v200'], data['u500'], 
-            data['v500'], data['mslp'], data['gh500'], data['u850'], data['v850'], data['pwat'])
-        state.img1 = fig
+        # @st.cache(hash_funcs={xr.core.dataset.Dataset: id}, allow_output_mutation=True, suppress_st_warning=True)
+        #def load_data(date_obj):
+        #    data = load_variables(date_obj, map_region=map_region)
+        #    return data
+        with s0.lock:
+            st.info('获得线程锁'+str(datetime.datetime.now()))
+            data = load_variables(date_obj, map_region=map_region)
+            
+            # draw the synoptic compsite
+            fig = draw_maps.draw_composite_map(
+                date_obj, data['t850'], data['u200'], data['v200'], data['u500'], 
+                data['v500'], data['mslp'], data['gh500'], data['u850'], data['v850'], data['pwat'])
+            s1.fig = fig
 
-        # draw weather analysis maps
-        outfile = '/tmp/reanalysis_map_%s.pkl' % uuid.uuid4().hex
-        p = Process(target=draw_maps.draw_weather_analysis, args=(date_obj, data, map_region, outfile))
-        p.start()
-        p.join()
-        if os.path.isfile(outfile):
-            with open(outfile, 'rb') as f:
-                state.img2 = pickle.load(f)
-            os.remove(outfile)
+            # draw weather analysi maps
+            s2.images = draw_maps.draw_weather_analysis(date_obj, data, map_region)
+            st.info('释放线程锁'+str(datetime.datetime.now()))
 
         # load observation data
         obs_data = cmadaas_obs_by_time(
             date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
             elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,SPRE_Time_0808,WIN_S_Max")
         if obs_data is not None:
-            state.img3 = draw_maps.draw_observation(obs_data, date_obj)
+            s3.fig = draw_maps.draw_observation(obs_data, date_obj)
 
-    if state.img1 is None or state.img2 is None:
+    if not s1 or not s2:
         st.info('请点击左侧**绘制天气图**按钮生成或更新图像.')
     else:
         # display observation
-        if state.img3 is not None:
+        if s3:
             st.markdown(
                 '''
                 ------
                 ### 站点实况''')
-            st.plotly_chart(state.img3, use_container_width=False)
+            st.plotly_chart(s3.fig, use_container_width=False)
 
         # display synoptic composite
         st.markdown(
                 '''
                 ------
                 ### 环流形势综合图''')
-        st.pyplot(state.img1)
+        st.pyplot(s1.fig)
 
         # display weather analysis maps
         st.markdown(
                 '''
                 ------
                 ### 选择要显示的天气图''')
-        options = [key for key in state.img2.keys()]
+        options = [key for key in s2.images.keys()]
         options = st.multiselect(
             '', options, ['500hPa_height', 'precipitable_water', 'mean_sea_level_pressure'])
         for option in options:
-            st.image(state.img2[option], use_column_width=True)
+            st.image(s2.images[option], use_column_width=True)
 
     st.sidebar.markdown(
     '''
@@ -153,6 +152,7 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
 
     # Subset and load data
     subdata = {}
+    st.info('Load CFSR from http://thredds.atmos.albany.edu:8080/thredds/dodsC/ (taking 30s)')
 
     # wind field
     my_bar = st.progress(0)
