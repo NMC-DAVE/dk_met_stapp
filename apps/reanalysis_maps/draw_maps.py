@@ -51,21 +51,103 @@ def draw_observation(data, date_obj):
      # set mapbox token
     px.set_mapbox_access_token(CONFIG.CONFIG['MAPBOX']['token'])
 
-    data['rain'] = pd.cut(
-        data['PRE_Time_0808'], bins=[0.1, 10, 25, 50, 100, 250, 1200], 
-        labels=['0.1~10', '10~25', '25~50', '50~100', '100~250', '>=250'])
-    df = data[data['rain'].notna()]
-    value_list = {
-        '0.1~10':'lightgreen', '10~25':'yellow', '25~50':'lightskyblue', 
-        '50~100':'blue', '100~250':'magenta', '>=250':'maroon'}
-    fig = px.scatter_mapbox(
-        df, lat="Lat", lon="Lon", color="rain",
-        color_discrete_map = value_list,
-        mapbox_style='satellite-streets', size="PRE_Time_0808", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
-        title = 'Accumulated precipitation ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
-        width=900, height=700)
+    # create figures
+    figs = collections.OrderedDict()
 
-    return fig
+    # draw precipitation
+    bins = [0.1, 10, 25, 50, 100, 250, 1200]
+    keys = ['0.1~10', '10~25', '25~50', '50~100', '100~250', '>=250']
+    cols = ['lightgreen', 'yellow', 'lightskyblue', 'blue', 'magenta','maroon']
+    cols_map = dict(zip(keys, cols))
+    data['rain'] = pd.cut(data['PRE_Time_0808'], bins=bins, labels=keys)
+    data['Rainfall'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+                       data['PRE_Time_0808'].astype(str)
+    data['rain_size'] = data['PRE_Time_0808'] + data['PRE_Time_0808'].mean()
+    df = data[data['rain'].notna()]
+    if df.shape[0] >= 2:
+        figs['Rainfall'] = px.scatter_mapbox(
+            df, lat="Lat", lon="Lon", color="rain", category_orders={'rain': keys}, color_discrete_map = cols_map,
+            hover_data={'Rainfall':True, 'Lon':False, 'Lat':False, 'rain':False, 'rain_size':False},
+            mapbox_style='satellite-streets', size="rain_size", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            title = 'Accumulated precipitation ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+            width=900, height=700)
+
+    # draw maximum temperature
+    bins = [35, 37, 40, 60]
+    keys = ['35~37', '37~40', '>=40']
+    cols = ['rgb(255,191,187)', 'rgb(250,89,0)', 'rgb(230,0,8)']
+    cols_map = dict(zip(keys, cols))
+    data['max_temp_warning'] = pd.cut(data['TEM_Max'], bins=bins, labels=keys)
+    data['max_temp'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+                       data['TEM_Max'].astype(str)
+    df = data[data['max_temp_warning'].notna()]
+    if df.shape[0] >= 2:
+        figs['Max_temperature'] = px.scatter_mapbox(
+            df, lat="Lat", lon="Lon", color="max_temp_warning", category_orders={'max_temp_warning': keys}, 
+            color_discrete_map = cols_map,
+            hover_data={'max_temp':True, 'Lon':False, 'Lat':False, 'max_temp_warning':False, 'TEM_Max':False},
+            mapbox_style='satellite-streets', size="TEM_Max", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            title = 'Maximum temperature ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+            width=900, height=700)
+
+    # draw minimum temperature
+    bins = [-120, -40, -30, -20, -10, 0]
+    keys = ['<=-40','-40~-30', '-30~-20', '-20~-10', '-10~0']
+    cols = ['rgb(178,1,223)', 'rgb(8,7,249)', 'rgb(5,71,162)', 'rgb(5,109,250)', 'rgb(111,176,248)']
+    cols_map = dict(zip(keys, cols))
+    data['min_temp_warning'] = pd.cut(data['TEM_Min'], bins=bins, labels=keys)
+    data['min_temp'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+                       data['TEM_Min'].astype(str)
+    df = data[data['min_temp_warning'].notna()]
+    if df.shape[0] >= 2:
+        figs['Min_temprature'] = px.scatter_mapbox(
+            df, lat="Lat", lon="Lon", color="min_temp_warning", category_orders={'min_temp_warning': keys}, 
+            color_discrete_map = cols_map,
+            hover_data={'min_temp':True, 'Lon':False, 'Lat':False, 'min_temp_warning':False, 'TEM_Min':False},
+            mapbox_style='satellite-streets', size=-1.0*df["TEM_Min"], center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            title = 'Minimum temperature ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+            width=900, height=700)
+
+    # draw low visibility
+    data['VIS_Min'] /= 1000.0
+    bins = [0, 0.05, 0.2, 0.5, 1]
+    keys = ['<=0.05','0.05~0.2', '0.2~0.5', '0.5~1']
+    cols = ['rgb(0,82,77)', 'rgb(0,153,160)', 'rgb(0,210,204)', 'rgb(95,255,252)']
+    cols_map = dict(zip(keys, cols))
+    data['min_vis_warning'] = pd.cut(data['VIS_Min'], bins=bins, labels=keys)
+    data['VIS_Min_size'] = 2.0-data["VIS_Min"]
+    data['min_vis'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+                      data['VIS_Min'].astype(str)
+    df = data[data['min_vis_warning'].notna()]
+    if df.shape[0] >= 2:
+        figs['Low_visibility'] = px.scatter_mapbox(
+            df, lat="Lat", lon="Lon", color="min_vis_warning", category_orders={'min_vis_warning': keys}, 
+            color_discrete_map = cols_map,
+            hover_data={'min_vis':True, 'Lon':False, 'Lat':False, 'min_vis_warning':False, 'VIS_Min_size':False},
+            mapbox_style='satellite-streets', size="VIS_Min_size", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            title = 'Low visibility ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+            width=900, height=700)
+
+    # draw high wind
+    bins = [10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 37.0, 120]
+    keys = ['10.8~13.8','13.9~17.1', '17.2~20.7', '20.8~24.4', '24.5~28.4', '28.5~32.6', '32.7~36.9', '>=37.0']
+    cols = ['rgb(0,210,244)', 'rgb(0,125,255)', 'rgb(253,255,0)', 'rgb(247,213,0)',
+            'rgb(255,141,0)', 'rgb(251,89,91)', 'rgb(255,3,0)', 'rgb(178,1,223)']
+    cols_map = dict(zip(keys, cols))
+    data['max_win_warning'] = pd.cut(data['WIN_S_Max'], bins=bins, labels=keys)
+    data['max_win'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+                      data['WIN_S_Max'].astype(str)
+    df = data[data['max_win_warning'].notna()]
+    if df.shape[0] >= 2:
+        figs['High_wind'] = px.scatter_mapbox(
+            df, lat="Lat", lon="Lon", color="max_win_warning", category_orders={'max_win_warning': keys}, 
+            color_discrete_map = cols_map,
+            hover_data={'max_win':True, 'Lon':False, 'Lat':False, 'max_win_warning':False, 'WIN_S_Max':False},
+            mapbox_style='satellite-streets', size="WIN_S_Max", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            title = 'Maximum wind speed ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
+            width=900, height=700)
+
+    return figs
 
 
 def _get_image_file(infile):

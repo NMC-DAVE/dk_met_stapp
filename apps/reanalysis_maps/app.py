@@ -83,6 +83,7 @@ def  main():
             with open(outfile, 'rb') as f:
                 state.img2 = pickle.load(f)
             os.remove(outfile)
+        del data
 
         # load observation data
         obs_data = cmadaas_obs_by_time(
@@ -99,8 +100,10 @@ def  main():
             st.markdown(
                 '''
                 ------
-                ### 站点实况''')
-            st.plotly_chart(state.img3, use_container_width=False)
+                ### 选择站点实况观测''')
+            options = [key for key in state.img3.keys()]
+            option = st.selectbox('', options, 0)
+            st.plotly_chart(state.img3[option], use_container_width=False)
 
         # display synoptic composite
         st.markdown(
