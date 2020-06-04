@@ -83,6 +83,9 @@ def  main():
             with open(outfile, 'rb') as f:
                 state.img2 = pickle.load(f)
             os.remove(outfile)
+        else:
+            st.info('制作各层天气图失效!')
+            state.img2 = None
         del data
 
         # load observation data
@@ -90,7 +93,9 @@ def  main():
             date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
             elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,SPRE_Time_0808,WIN_S_Max")
         if obs_data is not None:
-            state.img3 = draw_maps.draw_observation(obs_data, date_obj)
+            state.img3 = draw_maps.draw_observation(obs_data, date_obj, map_region)
+        else:
+            state.img3 = None
 
     if state.img1 is None or state.img2 is None:
         st.info('请点击左侧**绘制天气图**按钮生成或更新图像.')
@@ -130,9 +135,6 @@ def  main():
     再分析资料是NCEP提供的第三代再分析产品. 本程序从Albany大学Thredds服务器检索指定日期时刻及范围的CFSR数据（从1979年1月1日以来每日4次, 全球范围）, 
     并绘制高空环流形势天气图. (**本程序由天气预报技术研发室开发**)
     ''')
-
-
-# def load_observation(date_obj, map_region=[50, 160, 6, 60]):
 
 
 def load_variables(date_obj, map_region=[50, 160, 6, 60]):

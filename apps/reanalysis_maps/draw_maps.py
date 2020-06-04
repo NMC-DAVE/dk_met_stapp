@@ -43,7 +43,7 @@ from nmc_met_graphics.plot.china_map import add_china_map_2cartopy
 from nmc_met_graphics.magics import dynamics, thermal, pv, moisture
 
 
-def draw_observation(data, date_obj):
+def draw_observation(data, date_obj, map_region):
     """
     Draw observation map with plotly
     """
@@ -52,6 +52,8 @@ def draw_observation(data, date_obj):
     px.set_mapbox_access_token(CONFIG.CONFIG['MAPBOX']['token'])
 
     # create figures
+    map_center = {'lat':(map_region[2] + map_region[3]) * 0.5,
+                  'lon':(map_region[0] + map_region[1]) * 0.5}
     figs = collections.OrderedDict()
 
     # draw precipitation
@@ -68,7 +70,7 @@ def draw_observation(data, date_obj):
         figs['Rainfall'] = px.scatter_mapbox(
             df, lat="Lat", lon="Lon", color="rain", category_orders={'rain': keys}, color_discrete_map = cols_map,
             hover_data={'Rainfall':True, 'Lon':False, 'Lat':False, 'rain':False, 'rain_size':False},
-            mapbox_style='satellite-streets', size="rain_size", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            mapbox_style='satellite-streets', size="rain_size", center=map_center, size_max=10, zoom=4,
             title = 'Accumulated precipitation ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
             width=900, height=700)
 
@@ -86,7 +88,7 @@ def draw_observation(data, date_obj):
             df, lat="Lat", lon="Lon", color="max_temp_warning", category_orders={'max_temp_warning': keys}, 
             color_discrete_map = cols_map,
             hover_data={'max_temp':True, 'Lon':False, 'Lat':False, 'max_temp_warning':False, 'TEM_Max':False},
-            mapbox_style='satellite-streets', size="TEM_Max", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            mapbox_style='satellite-streets', size="TEM_Max", center=map_center, size_max=10, zoom=4,
             title = 'Maximum temperature ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
             width=900, height=700)
 
@@ -104,7 +106,7 @@ def draw_observation(data, date_obj):
             df, lat="Lat", lon="Lon", color="min_temp_warning", category_orders={'min_temp_warning': keys}, 
             color_discrete_map = cols_map,
             hover_data={'min_temp':True, 'Lon':False, 'Lat':False, 'min_temp_warning':False, 'TEM_Min':False},
-            mapbox_style='satellite-streets', size=-1.0*df["TEM_Min"], center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            mapbox_style='satellite-streets', size=-1.0*df["TEM_Min"], center=map_center, size_max=10, zoom=4,
             title = 'Minimum temperature ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
             width=900, height=700)
 
@@ -124,7 +126,7 @@ def draw_observation(data, date_obj):
             df, lat="Lat", lon="Lon", color="min_vis_warning", category_orders={'min_vis_warning': keys}, 
             color_discrete_map = cols_map,
             hover_data={'min_vis':True, 'Lon':False, 'Lat':False, 'min_vis_warning':False, 'VIS_Min_size':False},
-            mapbox_style='satellite-streets', size="VIS_Min_size", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            mapbox_style='satellite-streets', size="VIS_Min_size", center=map_center, size_max=10, zoom=4,
             title = 'Low visibility ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
             width=900, height=700)
 
@@ -143,7 +145,7 @@ def draw_observation(data, date_obj):
             df, lat="Lat", lon="Lon", color="max_win_warning", category_orders={'max_win_warning': keys}, 
             color_discrete_map = cols_map,
             hover_data={'max_win':True, 'Lon':False, 'Lat':False, 'max_win_warning':False, 'WIN_S_Max':False},
-            mapbox_style='satellite-streets', size="WIN_S_Max", center={'lat':35, 'lon':110}, size_max=10, zoom=4,
+            mapbox_style='satellite-streets', size="WIN_S_Max", center=map_center, size_max=10, zoom=4,
             title = 'Maximum wind speed ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
             width=900, height=700)
 
