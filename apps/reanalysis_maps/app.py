@@ -14,7 +14,7 @@ import os
 import uuid
 import pickle
 import datetime
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 import xarray as xr
 import metpy
 import streamlit as st
@@ -37,6 +37,7 @@ def  main():
 
     # application information
     st.sidebar.image('http://image.nmc.cn/assets/img/index/nmc_logo_3.png', width=300)
+    st.sidebar.markdown('**天气预报技术研发室**')
 
     # Input data date
     data_date = st.sidebar.date_input(
@@ -75,17 +76,19 @@ def  main():
         state.img1 = fig
 
         # draw weather analysis maps
-        outfile = '/tmp/reanalysis_map_%s.pkl' % uuid.uuid4().hex
-        p = Process(target=draw_maps.draw_weather_analysis, args=(date_obj, data, map_region, outfile))
+        manager = Manager()
+        return_dict = manager.dict()
+        p = Process(target=draw_maps.draw_weather_analysis, args=(date_obj, data, map_region, return_dict))
         p.start()
         p.join()
-        if os.path.isfile(outfile):
-            with open(outfile, 'rb') as f:
-                state.img2 = pickle.load(f)
-            os.remove(outfile)
+        if return_dict[0] is not None:
+            state.img2 = return_dict[0]
         else:
             st.info('制作各层天气图失效!')
             state.img2 = None
+        return_dict.clear()
+        manager.shutdown()
+        p.close()
         del data
 
         # load observation data
@@ -133,7 +136,7 @@ def  main():
     ------
     [CFSR](https://climatedataguide.ucar.edu/climate-data/climate-forecast-system-reanalysis-cfsr)(CLIMATE FORECAST SYSTEM REANALYSIS)
     再分析资料是NCEP提供的第三代再分析产品. 本程序从Albany大学Thredds服务器检索指定日期时刻及范围的CFSR数据（从1979年1月1日以来每日4次, 全球范围）, 
-    并绘制高空环流形势天气图. (**本程序由天气预报技术研发室开发**)
+    并绘制高空环流形势天气图. 
     ''')
 
 

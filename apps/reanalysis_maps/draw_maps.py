@@ -164,13 +164,14 @@ def _get_image_file(infile):
     else:
         return None
 
-def draw_weather_analysis(date_obj, data, map_region, imagefile):
+def draw_weather_analysis(date_obj, data, map_region, return_dict):
     """
     Draw weather analysis map.
     """
 
     # image dictionary
     images = collections.OrderedDict()
+    return_dict[0] = None
 
     # draw 2PVU surface pressure
     outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
@@ -328,8 +329,7 @@ def draw_weather_analysis(date_obj, data, map_region, imagefile):
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
     images['mean_sea_level_pressure'] = _get_image_file(outfile)
 
-    with open(imagefile, 'wb') as f:
-        pickle.dump(images, f, pickle.HIGHEST_PROTOCOL)
+    return_dict[0] = images
 
 
 #Spatially smooth a 2D variable
