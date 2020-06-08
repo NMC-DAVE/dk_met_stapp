@@ -62,7 +62,7 @@ def draw_observation(data, date_obj, map_region):
     cols = ['lightgreen', 'yellow', 'lightskyblue', 'blue', 'magenta','maroon']
     cols_map = dict(zip(keys, cols))
     data['rain'] = pd.cut(data['PRE_Time_0808'], bins=bins, labels=keys)
-    data['Rainfall'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+    data['Rainfall'] = '['+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + ']: ' + \
                        data['PRE_Time_0808'].astype(str)
     data['rain_size'] = data['PRE_Time_0808'] + data['PRE_Time_0808'].mean()
     df = data[data['rain'].notna()]
@@ -80,7 +80,7 @@ def draw_observation(data, date_obj, map_region):
     cols = ['rgb(255,191,187)', 'rgb(250,89,0)', 'rgb(230,0,8)']
     cols_map = dict(zip(keys, cols))
     data['max_temp_warning'] = pd.cut(data['TEM_Max'], bins=bins, labels=keys)
-    data['max_temp'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+    data['max_temp'] = '['+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + ']: ' + \
                        data['TEM_Max'].astype(str)
     df = data[data['max_temp_warning'].notna()]
     if df.shape[0] >= 2:
@@ -98,7 +98,7 @@ def draw_observation(data, date_obj, map_region):
     cols = ['rgb(178,1,223)', 'rgb(8,7,249)', 'rgb(5,71,162)', 'rgb(5,109,250)', 'rgb(111,176,248)']
     cols_map = dict(zip(keys, cols))
     data['min_temp_warning'] = pd.cut(data['TEM_Min'], bins=bins, labels=keys)
-    data['min_temp'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+    data['min_temp'] = '['+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + ']: ' + \
                        data['TEM_Min'].astype(str)
     df = data[data['min_temp_warning'].notna()]
     if df.shape[0] >= 2:
@@ -118,7 +118,7 @@ def draw_observation(data, date_obj, map_region):
     cols_map = dict(zip(keys, cols))
     data['min_vis_warning'] = pd.cut(data['VIS_Min'], bins=bins, labels=keys)
     data['VIS_Min_size'] = 2.0-data["VIS_Min"]
-    data['min_vis'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+    data['min_vis'] = '['+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + ']: ' + \
                       data['VIS_Min'].astype(str)
     df = data[data['min_vis_warning'].notna()]
     if df.shape[0] >= 2:
@@ -137,7 +137,7 @@ def draw_observation(data, date_obj, map_region):
             'rgb(255,141,0)', 'rgb(251,89,91)', 'rgb(255,3,0)', 'rgb(178,1,223)']
     cols_map = dict(zip(keys, cols))
     data['max_win_warning'] = pd.cut(data['WIN_S_Max'], bins=bins, labels=keys)
-    data['max_win'] = '('+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + '): ' + \
+    data['max_win'] = '['+data['Lon'].round(2).astype(str) + ',' + data['Lat'].round(2).astype(str) + ']: ' + \
                       data['WIN_S_Max'].astype(str)
     df = data[data['max_win_warning'].notna()]
     if df.shape[0] >= 2:
