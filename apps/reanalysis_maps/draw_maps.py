@@ -13,7 +13,6 @@ refer to https://github.com/tomerburg/python_gallery
 
 #Import the necessary libraries
 import os
-import uuid
 import pickle
 import collections
 import numpy as np
@@ -152,18 +151,6 @@ def draw_observation(data, date_obj, map_region):
     return figs
 
 
-def _get_image_file(infile):
-    """
-    Read image file and remove the file.
-    """
-    infile = infile + ".png"
-    if os.path.isfile(infile):
-        image = Image.open(infile)
-        os.remove(infile)
-        return image
-    else:
-        return None
-
 def draw_weather_analysis(date_obj, data, map_region, return_dict):
     """
     Draw weather analysis map.
@@ -174,160 +161,142 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     return_dict[0] = None
 
     # draw 2PVU surface pressure
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    pv.draw_pres_pv2(
+    image = pv.draw_pres_pv2(
         data['pres_pv2'].values, data['pres_pv2']['lon'].values, data['pres_pv2']['lat'].values,
-        map_region=map_region, date_obj=date_obj, outfile=outfile)
-    images['2PVU_surface_pressure'] = _get_image_file(outfile)
+        map_region=map_region, date_obj=date_obj)
+    images['2PVU_surface_pressure'] = image
 
     # draw 200hPa wind field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_wind_upper(
+    image = dynamics.draw_wind_upper(
         data['u200'].values, data['v200'].values, 
         data['u200']['lon'].values, data['u200']['lat'].values,
         gh=data['gh200'].values, map_region=map_region, date_obj=date_obj,
-        head_info="200hPa Wind[m/s] and Height[gpm]", outfile=outfile)
-    images['200hPa_wind'] = _get_image_file(outfile)
+        head_info="200hPa Wind[m/s] and Height[gpm]")
+    images['200hPa_wind'] = image
 
     # draw 500hPa height and temperature
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_height_temp(
+    image = dynamics.draw_height_temp(
         data['gh500'].values, data['t500'].values, 
         data['gh500']['lon'].values, data['gh500']['lat'].values, 
         map_region=map_region, date_obj=date_obj,
-        head_info="500hPa Height[gpm] and Temperature[DegC]", outfile=outfile)
-    images['500hPa_height'] = _get_image_file(outfile)
+        head_info="500hPa Height[gpm] and Temperature[DegC]")
+    images['500hPa_height'] = image
 
     # draw 500hPa vorticity
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_vort_high(
+    image = dynamics.draw_vort_high(
         data['u500'].values, data['v500'].values, 
         data['u500']['lon'].values, data['u500']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="500hPa Wind, Vorticity and Height[gpm]", outfile=outfile)
-    images['500hPa_vorticity'] = _get_image_file(outfile)
+        head_info="500hPa Wind, Vorticity and Height[gpm]")
+    images['500hPa_vorticity'] = image
 
     # draw 700hPa vertical velocity
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_vvel_high(
+    image = dynamics.draw_vvel_high(
         data['u700'].values, data['v700'].values, data['w700'].values, 
         data['w700']['lon'].values, data['w700']['lat'].values,
         gh=data['gh700'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind, Vertical Velocity[Pa/s] and Height[gpm]", outfile=outfile)
-    images['700hPa_vertical_velocity'] = _get_image_file(outfile)
+        head_info="700hPa Wind, Vertical Velocity[Pa/s] and Height[gpm]")
+    images['700hPa_vertical_velocity'] = image
 
     # draw 700hPa wind field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_wind_high(
+    image = dynamics.draw_wind_high(
         data['u700'].values, data['v700'].values, 
         data['u700']['lon'].values, data['u700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    images['700hPa_wind'] = _get_image_file(outfile)
+        head_info="700hPa Wind[m/s] and 500hPa Height[gpm]")
+    images['700hPa_wind'] = image
 
     # draw 700hPa temperature field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    thermal.draw_temp_high(
+    image = thermal.draw_temp_high(
         data['t700'].values, data['t700']['lon'].values, data['t700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    images['700hPa_Temperature'] = _get_image_file(outfile)
+        head_info="700hPa Temperature[Degree] and 500hPa Height[gpm]")
+    images['700hPa_Temperature'] = image
 
     # draw 700hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q700'], data['t700'], 700 * units.hPa) * 100
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_rh_high(
+    image = moisture.draw_rh_high(
         data['u700'].values, data['v700'].values, rh.magnitude,
         data['u700']['lon'].values, data['u700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    images['700hPa_relative_humidity'] = _get_image_file(outfile)
+        head_info="700hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+    images['700hPa_relative_humidity'] = image
 
     # draw 850hPa wind field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_wind_high(
+    image = dynamics.draw_wind_high(
         data['u850'].values, data['v850'].values, 
         data['u850']['lon'].values, data['u850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    images['850hPa_wind'] = _get_image_file(outfile)
+        head_info="850hPa Wind[m/s] and 500hPa Height[gpm]")
+    images['850hPa_wind'] = image
 
     # draw 850hPa temperature field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    thermal.draw_temp_high(
+    image = thermal.draw_temp_high(
         data['t850'].values, data['t850']['lon'].values, data['t850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    images['850hPa_temperature'] = _get_image_file(outfile)
+        head_info="850hPa Temperature[Degree] and 500hPa Height[gpm]")
+    images['850hPa_temperature'] = image
 
     # draw 850hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q850'], data['t850'], 850 * units.hPa) * 100
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_rh_high(
+    image = moisture.draw_rh_high(
         data['u850'].values, data['v850'].values, rh.magnitude,
         data['u850']['lon'].values, data['u850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    images['850hPa_relative_humidity'] = _get_image_file(outfile)
+        head_info="850hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+    images['850hPa_relative_humidity'] = image
 
     # draw 850hPa specific field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_sp_high(
+    image = moisture.draw_sp_high(
         data['u850'].values, data['v850'].values, data['q850'].values*1000.,
         data['q850']['lon'].values, data['q850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]", outfile=outfile)
-    images['850hPa_specific_humidity'] = _get_image_file(outfile)
+        head_info="850hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]")
+    images['850hPa_specific_humidity'] = image
 
     # draw 925hPa temperature field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    thermal.draw_temp_high(
+    image = thermal.draw_temp_high(
         data['t925'].values, data['t925']['lon'].values, data['t925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Temperature[Degree] and 500hPa Height[gpm]", outfile=outfile)
-    images['925hPa_temperature'] = _get_image_file(outfile)
+        head_info="925hPa Temperature[Degree] and 500hPa Height[gpm]")
+    images['925hPa_temperature'] = image
 
     # draw 925hPa wind field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_wind_high(
+    image = dynamics.draw_wind_high(
         data['u925'].values, data['v925'].values, 
         data['u925']['lon'].values, data['u925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s] and 500hPa Height[gpm]", outfile=outfile)
-    images['925hPa_wind'] = _get_image_file(outfile)
+        head_info="925hPa Wind[m/s] and 500hPa Height[gpm]")
+    images['925hPa_wind'] = image
 
     # draw 925hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(data['q925'], data['t925'], 925 * units.hPa) * 100
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_rh_high(
+    image = moisture.draw_rh_high(
         data['u925'].values, data['v925'].values, rh.magnitude,
         data['u925']['lon'].values, data['u925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]", outfile=outfile)
-    images['925hPa_relative_humdity'] = _get_image_file(outfile)
+        head_info="925hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+    images['925hPa_relative_humdity'] = image
 
     # draw 925hPa specific field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_sp_high(
+    image = moisture.draw_sp_high(
         data['u925'].values, data['v925'].values, data['q925'].values*1000.,
         data['q925']['lon'].values, data['q925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]", outfile=outfile)
-    images['925hPa_specific_humidity'] = _get_image_file(outfile)
+        head_info="925hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]")
+    images['925hPa_specific_humidity'] = image
 
     # draw precipitable water field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    moisture.draw_pwat(
+    image = moisture.draw_pwat(
         data['pwat'].values, data['pwat']['lon'].values, data['pwat']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
-    images['precipitable_water'] = _get_image_file(outfile)
+        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj)
+    images['precipitable_water'] = image
 
     # draw mean sea level pressure field
-    outfile = '/tmp/reanalysis_map_%s' % uuid.uuid4().hex
-    dynamics.draw_mslp(
+    image = dynamics.draw_mslp(
         data['mslp'].values, data['mslp']['lon'].values, data['mslp']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj, outfile=outfile)
-    images['mean_sea_level_pressure'] = _get_image_file(outfile)
+        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj)
+    images['mean_sea_level_pressure'] = image
 
     return_dict[0] = images
 
