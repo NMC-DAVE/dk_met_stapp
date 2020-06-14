@@ -163,54 +163,53 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     # draw 2PVU surface pressure
     image = pv.draw_pres_pv2(
         data['pres_pv2'].values, data['pres_pv2']['lon'].values, data['pres_pv2']['lat'].values,
-        map_region=map_region, date_obj=date_obj)
+        map_region=map_region, title_kwargs={'name':'CFSR', 'time': date_obj})
     images['2PVU_surface_pressure'] = image
 
     # draw 200hPa wind field
     image = dynamics.draw_wind_upper(
         data['u200'].values, data['v200'].values, 
         data['u200']['lon'].values, data['u200']['lat'].values,
-        gh=data['gh200'].values, map_region=map_region, date_obj=date_obj,
-        head_info="200hPa Wind[m/s] and Height[gpm]")
+        gh=data['gh200'].values, map_region=map_region, 
+        title_kwargs={'name':'CFSR', 'head': "200hPa Wind | GH", 'time': date_obj})
     images['200hPa_wind'] = image
 
     # draw 500hPa height and temperature
     image = dynamics.draw_height_temp(
         data['gh500'].values, data['t500'].values, 
-        data['gh500']['lon'].values, data['gh500']['lat'].values, 
-        map_region=map_region, date_obj=date_obj,
-        head_info="500hPa Height[gpm] and Temperature[DegC]")
+        data['gh500']['lon'].values, data['gh500']['lat'].values, map_region=map_region, 
+        title_kwargs={'name':'CFSR', 'head': "500hPa GH | T", 'time': date_obj})
     images['500hPa_height'] = image
 
     # draw 500hPa vorticity
     image = dynamics.draw_vort_high(
         data['u500'].values, data['v500'].values, 
         data['u500']['lon'].values, data['u500']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="500hPa Wind, Vorticity and Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "500hPa Wind | Vorticity | GH", 'time': date_obj})
     images['500hPa_vorticity'] = image
 
     # draw 700hPa vertical velocity
     image = dynamics.draw_vvel_high(
         data['u700'].values, data['v700'].values, data['w700'].values, 
         data['w700']['lon'].values, data['w700']['lat'].values,
-        gh=data['gh700'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind, Vertical Velocity[Pa/s] and Height[gpm]")
+        gh=data['gh700'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "700hPa Vertical Velocity | Wind | GH", 'time': date_obj})
     images['700hPa_vertical_velocity'] = image
 
     # draw 700hPa wind field
     image = dynamics.draw_wind_high(
         data['u700'].values, data['v700'].values, 
         data['u700']['lon'].values, data['u700']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind[m/s] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "700hPa Wind | 500hPa GH", 'time': date_obj})
     images['700hPa_wind'] = image
 
     # draw 700hPa temperature field
     image = thermal.draw_temp_high(
         data['t700'].values, data['t700']['lon'].values, data['t700']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Temperature[Degree] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "700hPa T | 500hPa GH", 'time': date_obj})
     images['700hPa_Temperature'] = image
 
     # draw 700hPa relative humidity
@@ -218,23 +217,23 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     image = moisture.draw_rh_high(
         data['u700'].values, data['v700'].values, rh.magnitude,
         data['u700']['lon'].values, data['u700']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="700hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "700hPa RH | Wind | 500hPa GH", 'time': date_obj})
     images['700hPa_relative_humidity'] = image
 
     # draw 850hPa wind field
     image = dynamics.draw_wind_high(
         data['u850'].values, data['v850'].values, 
         data['u850']['lon'].values, data['u850']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "850hPa Wind | 500hPa GH", 'time': date_obj})
     images['850hPa_wind'] = image
 
     # draw 850hPa temperature field
     image = thermal.draw_temp_high(
         data['t850'].values, data['t850']['lon'].values, data['t850']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Temperature[Degree] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "850hPa T | 500hPa GH", 'time': date_obj})
     images['850hPa_temperature'] = image
 
     # draw 850hPa relative humidity
@@ -242,31 +241,31 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     image = moisture.draw_rh_high(
         data['u850'].values, data['v850'].values, rh.magnitude,
         data['u850']['lon'].values, data['u850']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "850hPa RH | Wind | 500hPa GH", 'time': date_obj})
     images['850hPa_relative_humidity'] = image
 
     # draw 850hPa specific field
     image = moisture.draw_sp_high(
         data['u850'].values, data['v850'].values, data['q850'].values*1000.,
         data['q850']['lon'].values, data['q850']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="850hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "850hPa SP | Wind | 500hPa GH", 'time': date_obj})
     images['850hPa_specific_humidity'] = image
 
     # draw 925hPa temperature field
     image = thermal.draw_temp_high(
         data['t925'].values, data['t925']['lon'].values, data['t925']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Temperature[Degree] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "925hPa T | 500hPa GH", 'time': date_obj})
     images['925hPa_temperature'] = image
 
     # draw 925hPa wind field
     image = dynamics.draw_wind_high(
         data['u925'].values, data['v925'].values, 
         data['u925']['lon'].values, data['u925']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "925hPa Wind | 500hPa GH", 'time': date_obj})
     images['925hPa_wind'] = image
 
     # draw 925hPa relative humidity
@@ -274,28 +273,30 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     image = moisture.draw_rh_high(
         data['u925'].values, data['v925'].values, rh.magnitude,
         data['u925']['lon'].values, data['u925']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s], Relative Humidity[%] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "925hPa RH | Wind | 500hPa GH", 'time': date_obj})
     images['925hPa_relative_humdity'] = image
 
     # draw 925hPa specific field
     image = moisture.draw_sp_high(
         data['u925'].values, data['v925'].values, data['q925'].values*1000.,
         data['q925']['lon'].values, data['q925']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj,
-        head_info="925hPa Wind[m/s], Specific Humidity[g/Kg] and 500hPa Height[gpm]")
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "925hPa SP | Wind | 500hPa GH", 'time': date_obj})
     images['925hPa_specific_humidity'] = image
 
     # draw precipitable water field
     image = moisture.draw_pwat(
         data['pwat'].values, data['pwat']['lon'].values, data['pwat']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj)
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "Precipitable Water | 500hPa GH", 'time': date_obj})
     images['precipitable_water'] = image
 
     # draw mean sea level pressure field
     image = dynamics.draw_mslp(
         data['mslp'].values, data['mslp']['lon'].values, data['mslp']['lat'].values,
-        gh=data['gh500'].values, map_region=map_region, date_obj=date_obj)
+        gh=data['gh500'].values, map_region=map_region,
+        title_kwargs={'name':'CFSR', 'head': "MSLP | 500hPa GH", 'time': date_obj})
     images['mean_sea_level_pressure'] = image
 
     return_dict[0] = images
