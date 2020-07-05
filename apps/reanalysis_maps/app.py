@@ -16,13 +16,14 @@ import requests
 import pickle
 import datetime
 from multiprocessing import Process, Manager
+import numpy as np
 import xarray as xr
 import metpy
 import streamlit as st
 
 from nmc_met_io.retrieve_cmadaas import cmadaas_obs_by_time
 from nmc_met_graphics.util import  get_map_regions
-from nmc_met_graphics.web import SessionState
+from nmc_met_graphics.web import SessionState, ipyplot
 
 sys.path.append('.')
 import draw_maps
@@ -125,12 +126,16 @@ def  main():
         st.markdown(
                 '''
                 ------
-                ### 选择要显示的天气图''')
-        options = [key for key in state.img2.keys()]
-        options = st.multiselect(
-            '', options, ['500hPa_height', 'precipitable_water', 'mean_sea_level_pressure'])
-        for option in options:
-            st.image(state.img2[option], use_column_width=True)
+                ### 点击天气图弹出放大''')
+        images = np.asarray([*state.img2.values()], dtype=np.object)
+        labels = np.asarray([*state.img2.keys()])
+        html = ipyplot.display_image_gallery(images, labels, img_width=200)
+        st.markdown(html, unsafe_allow_html=True)
+        # options = [key for key in state.img2.keys()]
+        #options = st.multiselect(
+        #    '', options, ['500hPa_height', 'precipitable_water', 'mean_sea_level_pressure'])
+        #for option in options:
+        #    st.image(state.img2[option], use_column_width=True)
 
     st.sidebar.markdown(
     '''
