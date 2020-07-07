@@ -34,8 +34,8 @@ state = SessionState.get(img1=None, img2=None, img3=None)
 
 def  main():
     # application title
-    st.title("历史天气图分析检索")
-    st.header('——读取NCEP CFSR再分析资料并绘制天气图')
+    st.title("历史天气图分析")
+    st.header('——检索1979年1月1日以来的地面观测日值和天气图')
 
     # application information
     st.sidebar.image('http://image.nmc.cn/assets/img/index/nmc_logo_3.png', width=300)
