@@ -21,15 +21,15 @@ import xarray as xr
 import metpy
 import streamlit as st
 
+# set page title
+st.beta_set_page_config(page_title="历史天气图分析", layout="wide")
+
 from nmc_met_io.retrieve_cmadaas import cmadaas_obs_by_time
 from nmc_met_graphics.util import  get_map_regions
 from nmc_met_graphics.web import SessionState, ipyplot
 
 sys.path.append('.')
 import draw_maps
-
-# set page title
-st.beta_set_page_config(page_title="历史天气图分析", layout="wide")
 
 # set session state
 state = SessionState.get(img1=None, img2=None, img3=None)
