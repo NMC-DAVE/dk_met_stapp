@@ -28,6 +28,9 @@ from nmc_met_graphics.web import SessionState, ipyplot
 sys.path.append('.')
 import draw_maps
 
+# set page title
+st.beta_set_page_config(page_title="历史天气图分析", layout="wide")
+
 # set session state
 state = SessionState.get(img1=None, img2=None, img3=None)
 
