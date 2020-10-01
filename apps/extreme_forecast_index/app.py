@@ -13,7 +13,7 @@
   . streamlit run app.py
 
   # 本程序依赖程序库
-     - eccodes, conda install -c conda-forge eccodes
+     - magics, conda install -c conda-forge magics
      - cfgrib, pip install cfgrib
      - nmc_met_io, pip install nmc-met-io
      - nmc_met_graphics, pip install nmc-met-graphics
