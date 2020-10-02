@@ -33,6 +33,8 @@ from nmc_met_io.read_grib import read_ecmwf_ens_efi
 from nmc_met_graphics.util import get_map_global_regions
 from nmc_met_graphics.magics.efi import draw_efi
 from nmc_met_graphics.web import ipyplot
+from nmc_met_base.grid import grid_subset
+
 
 # set page title
 st.beta_set_page_config(page_title="极端天气指数", layout="wide")
@@ -116,6 +118,16 @@ def main():
         data_sot = read_ecmwf_ens_efi(
             datafile, short_name=variables[select_item],
             init_hour=init_hour, data_type='sot', number=90, cache_dir=temp_dir)
+        # reorder latitude and cut map region for fast Magics plot.
+        data_efi = data_efi.sortby('latitude', ascending=True)
+        data_sot = data_sot.sortby('latitude', ascending=True)
+        if map_region[0] >= 0:
+            data_efi = data_efi.sel(
+                latitude=slice(map_region[2], map_region[3]),
+                longitude=slice(map_region[0], map_region[1]))
+            data_sot = data_sot.sel(
+                latitude=slice(map_region[2], map_region[3]),
+                longitude=slice(map_region[0], map_region[1]))
         my_bar.progress(50)
 
         # draw EFI maps
