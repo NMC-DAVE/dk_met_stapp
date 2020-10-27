@@ -97,6 +97,7 @@ def main():
             datafile1 = os.path.join(data_dir, datetime_str, datetime_str+'.EFI.240')
             if not os.path.isfile(datafile1):
                 st.markdown('数据文件不存在: '+ datafile1)
+                st.stop()
             else:
                 shutil.copyfile(datafile1, datafile)
 

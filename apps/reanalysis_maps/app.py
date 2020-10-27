@@ -1,5 +1,3 @@
-
-
 # _*_ coding: utf-8 _*_
 
 # Copyright (c) 2020 NMC Developers.

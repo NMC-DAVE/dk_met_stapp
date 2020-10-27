@@ -320,10 +320,17 @@ def smooth(prod,sig):
 def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850, v850, pwat):
     """
     Draw synoptic composite map.
+    All variables must have the same region.
 
     Args:
-        map_subset (int, optional): [description]. Defaults to 1.
-        map_region (list, optional): [description]. Defaults to [70, 140, 20, 60].
+        date_obj (datetime) : datetime ojbect.
+        t850 (xarray): 850hPa temperature, must have lat and lon coordinates.
+        u200, v200 (xarray): 200hPa u and v wind component.
+        u500, v500 (xarray): 500hPa u and v wind component.
+        mslp (xarray): mean sea level pressure.
+        gh500 (xarray): 500hPa geopotential height.
+        u850, v850 (xarray): 850hPa u and v wind component.
+        pwat (xarray): precipitable water.
     """
      
     #Get lat and lon arrays for this dataset:
