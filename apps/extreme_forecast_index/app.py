@@ -33,11 +33,10 @@ from nmc_met_io.read_grib import read_ecmwf_ens_efi
 from nmc_met_graphics.util import get_map_global_regions
 from nmc_met_graphics.magics.efi import draw_efi
 from nmc_met_graphics.web import ipyplot
-from nmc_met_base.grid import grid_subset
 
 
 # set page title
-st.beta_set_page_config(page_title="极端天气指数", layout="wide")
+st.set_page_config(page_title="极端天气指数", layout="wide")
 
 def main():
     # application title

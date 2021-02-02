@@ -8,19 +8,15 @@
 """
 
 import sys
-import os
-import uuid
 import requests
-import pickle
 import datetime
 from multiprocessing import Process, Manager
 import numpy as np
 import xarray as xr
-import metpy
 import streamlit as st
 
 # set page title
-st.beta_set_page_config(page_title="历史天气图分析", layout="wide")
+st.set_page_config(page_title="历史天气图分析", layout="wide")
 
 from nmc_met_io.retrieve_cmadaas import cmadaas_obs_by_time
 from nmc_met_graphics.util import  get_map_regions
