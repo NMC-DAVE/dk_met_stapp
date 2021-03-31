@@ -209,7 +209,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     images['700hPa_Temperature'] = image
 
     # draw 700hPa relative humidity
-    rh = calc.relative_humidity_from_specific_humidity(data['q700'], data['t700'], 700 * units.hPa) * 100
+    rh = calc.relative_humidity_from_specific_humidity(700 * units.hPa, data['q700'], data['t700']) * 100
     image = moisture.draw_rh_high(
         data['u700'].values, data['v700'].values, rh.magnitude,
         data['u700']['lon'].values, data['u700']['lat'].values,
@@ -233,7 +233,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     images['850hPa_Temperature'] = image
 
     # draw 850hPa relative humidity
-    rh = calc.relative_humidity_from_specific_humidity(data['q850'], data['t850'], 850 * units.hPa) * 100
+    rh = calc.relative_humidity_from_specific_humidity(850 * units.hPa, data['q850'], data['t850']) * 100
     image = moisture.draw_rh_high(
         data['u850'].values, data['v850'].values, rh.magnitude,
         data['u850']['lon'].values, data['u850']['lat'].values,
@@ -265,7 +265,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     images['925hPa_Wind'] = image
 
     # draw 925hPa relative humidity
-    rh = calc.relative_humidity_from_specific_humidity(data['q925'], data['t925'], 925 * units.hPa) * 100
+    rh = calc.relative_humidity_from_specific_humidity(925 * units.hPa, data['q925'], data['t925']) * 100
     image = moisture.draw_rh_high(
         data['u925'].values, data['v925'].values, rh.magnitude,
         data['u925']['lon'].values, data['u925']['lat'].values,
