@@ -12,20 +12,16 @@ refer to https://github.com/tomerburg/python_gallery
 
 
 #Import the necessary libraries
-import os
-import pickle
 import collections
 import numpy as np
 import xarray as xr
 import pandas as pd
 import datetime as dt
 import scipy.ndimage as ndimage
-from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
 import matplotlib.gridspec as gridspec
 
-import cartopy
 from cartopy import crs as ccrs
 import cartopy.feature as cfeature
 from cartopy import util as cu
@@ -386,7 +382,7 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
 
     #Specify contour settings
     clevs = np.arange(-40,40,1)
-    cmap = plt.cm.jet
+    cmap = plt.get_cmap('jet')
     extend = "both"
 
     #Contour fill this variable
@@ -412,7 +408,7 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
     cs = ax.contourf(lon,lat,pwat,clevs,cmap=cmap,norm=norm,extend=extend,transform=proj_ccrs,alpha=0.9)
 
     #Add a color bar
-    cbar = plt.colorbar(cs,cax=ax2,shrink=0.75,pad=0.01,ticks=[20,30,40,50,60,70])
+    _ = plt.colorbar(cs,cax=ax2,shrink=0.75,pad=0.01,ticks=[20,30,40,50,60,70])
 
     #--------------------------------------------------------------------------------------------------------
     # 250-hPa wind
@@ -431,7 +427,7 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
     cs = ax.contourf(lon,lat,wind,clevs,cmap=cmap,norm=norm,extend=extend,transform=proj_ccrs)
 
     #Add a color bar
-    cbar = plt.colorbar(cs,cax=ax3,shrink=0.75,pad=0.01,ticks=clevs)
+    _ = plt.colorbar(cs,cax=ax3,shrink=0.75,pad=0.01,ticks=clevs)
 
     #--------------------------------------------------------------------------------------------------------
     # 500-hPa smoothed vorticity
@@ -439,12 +435,12 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
 
     #Get the data for this variable
     dx,dy = calc.lat_lon_grid_deltas(lon,lat)
-    vort = calc.vorticity(u500,v500,dx,dy)
+    vort = calc.vorticity(u500, v500, dx=dx, dy=dy)
     smooth_vort = smooth(vort, 5.0) * 10**5
 
     #Specify contour settings
     clevs = np.arange(2,20,1)
-    cmap = plt.cm.autumn_r
+    cmap = plt.get_cmap('autumn_r')
     extend = "max"
 
     #Contour fill this variable
@@ -452,7 +448,7 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
     cs = ax.contourf(lon,lat,smooth_vort,clevs,cmap=cmap,norm=norm,extend=extend,transform=proj_ccrs,alpha=0.3)
 
     #Add a color bar
-    cbar = plt.colorbar(cs,cax=ax4,shrink=0.75,pad=0.01,ticks=clevs[::2])
+    _ = plt.colorbar(cs,cax=ax4,shrink=0.75,pad=0.01,ticks=clevs[::2])
             
     #========================================================================================================
     # Contours
@@ -498,7 +494,7 @@ def draw_composite_map(date_obj, t850, u200, v200, u500, v500, mslp, gh500, u850
     #--------------------------------------------------------------------------------------------------------
 
     #Plot wind barbs
-    quivers = ax.quiver(lon, lat, u850.values, v850.values, transform=proj_ccrs, regrid_shape=(38,30), scale=820, alpha=0.5)
+    _ = ax.quiver(lon, lat, u850.values, v850.values, transform=proj_ccrs, regrid_shape=(38,30), scale=820, alpha=0.5)
 
     #--------------------------------------------------------------------------------------------------------
     # Label highs & lows
