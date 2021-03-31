@@ -211,7 +211,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     # draw 700hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(700 * units.hPa, data['t700'], data['q700']) * 100
     image = moisture.draw_rh_high(
-        data['u700'].values, data['v700'].values, rh.magnitude,
+        data['u700'].values, data['v700'].values, rh.values,
         data['u700']['lon'].values, data['u700']['lat'].values,
         gh=data['gh500'].values, map_region=map_region,
         title_kwargs={'name':'CFSR', 'head': "700hPa RH | Wind | 500hPa GH", 'time': date_obj})
@@ -235,7 +235,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     # draw 850hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(850 * units.hPa, data['t850'], data['q850']) * 100
     image = moisture.draw_rh_high(
-        data['u850'].values, data['v850'].values, rh.magnitude,
+        data['u850'].values, data['v850'].values, rh.values,
         data['u850']['lon'].values, data['u850']['lat'].values,
         gh=data['gh500'].values, map_region=map_region,
         title_kwargs={'name':'CFSR', 'head': "850hPa RH | Wind | 500hPa GH", 'time': date_obj})
@@ -267,7 +267,7 @@ def draw_weather_analysis(date_obj, data, map_region, return_dict):
     # draw 925hPa relative humidity
     rh = calc.relative_humidity_from_specific_humidity(925 * units.hPa, data['t925'], data['q925']) * 100
     image = moisture.draw_rh_high(
-        data['u925'].values, data['v925'].values, rh.magnitude,
+        data['u925'].values, data['v925'].values, rh.values,
         data['u925']['lon'].values, data['u925']['lat'].values,
         gh=data['gh500'].values, map_region=map_region,
         title_kwargs={'name':'CFSR', 'head': "925hPa RH | Wind | 500hPa GH", 'time': date_obj})

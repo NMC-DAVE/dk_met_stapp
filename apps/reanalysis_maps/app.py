@@ -124,7 +124,7 @@ def  main():
                 '''
                 ------
                 ### 点击天气图弹出放大''')
-        images = np.asarray([*state.img2.values()], dtype=np.object)
+        images = np.asarray([*state.img2.values()], dtype=object)
         labels = np.asarray([*state.img2.keys()])
         html = ipyplot.display_image_gallery(images, labels, img_width=200)
         st.markdown(html, unsafe_allow_html=True)
