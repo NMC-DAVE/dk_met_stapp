@@ -93,7 +93,7 @@ def  main():
         # load observation data
         obs_data = cmadaas_obs_by_time(
             date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
-            elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,SPRE_Time_0808,WIN_S_Max")
+            elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
         if obs_data is not None:
             state.img3 = draw_maps.draw_observation(obs_data, date_obj, map_region)
         else:
