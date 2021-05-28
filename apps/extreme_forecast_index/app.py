@@ -52,7 +52,7 @@ def main():
     data_dir = config['DEFAULT']['data_directory']
     data_subdir = [dir for dir in os.listdir(data_dir) if len(dir) == 10 and dir.isnumeric()]
     data_subdir.sort(reverse=True)
-    data_subdir = data_subdir[0:20]
+#   data_subdir = data_subdir[0:20]
     
     # Input data time
     datetime_str = st.sidebar.selectbox('选择起报时间:', data_subdir)
