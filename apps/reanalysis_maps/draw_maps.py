@@ -142,7 +142,7 @@ def draw_observation(data, date_obj, map_region):
             hover_data={'max_win':True, 'Lon':False, 'Lat':False, 'max_win_warning':False, 'WIN_S_Max':False},
             mapbox_style='satellite-streets', size="WIN_S_Max", center=map_center, size_max=10, zoom=4,
             title = 'Maximum wind speed ({})'.format(date_obj.strftime("%Y%m%d 08-08")),
-            width=900, height=700)
+            width=1000, height=800)
 
     return figs
 

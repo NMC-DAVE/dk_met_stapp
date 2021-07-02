@@ -14,11 +14,13 @@ from multiprocessing import Process, Manager
 import numpy as np
 import xarray as xr
 import streamlit as st
+from metpy.units import units
 
 # set page title
 st.set_page_config(page_title="历史天气图分析", layout="wide")
 
 from nmc_met_io.retrieve_cmadaas import cmadaas_obs_by_time
+from nmc_met_io.retrieve_cimiss_server import cimiss_obs_by_time
 from nmc_met_graphics.util import  get_map_regions
 from nmc_met_graphics.web import SessionState, ipyplot
 
@@ -40,7 +42,7 @@ def  main():
 
     # Input data date
     data_date = st.sidebar.date_input(
-        "输入日期:", datetime.date(2016, 7, 19),
+        "输入日期:", datetime.date(2020, 7, 1),
         min_value=datetime.date(1979, 1, 1),
         max_value=datetime.date.today() - datetime.timedelta(days=2))
 
@@ -65,7 +67,6 @@ def  main():
     # draw the figures
     if st.sidebar.button('绘制天气图'):
         # load data
-        st.info('载入CFSR数据, http://thredds.atmos.albany.edu:8080/thredds/dodsC/ (taking 30s)')
         data = load_variables(date_obj, map_region=map_region)
         
         # draw the synoptic compsite
@@ -91,9 +92,13 @@ def  main():
         del data
 
         # load observation data
-        obs_data = cmadaas_obs_by_time(
+        obs_data = cimiss_obs_by_time(
             date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
             elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
+        # Also support cmadaas server
+        # obs_data = cmadaas_obs_by_time(
+        #     date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
+        #     elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
         if obs_data is not None:
             state.img3 = draw_maps.draw_observation(obs_data, date_obj, map_region)
         else:
@@ -110,7 +115,7 @@ def  main():
                 ### 选择站点实况观测''')
             options = [key for key in state.img3.keys()]
             option = st.selectbox('', options, 0)
-            st.plotly_chart(state.img3[option], use_container_width=False)
+            st.plotly_chart(state.img3[option], use_container_width=True)
 
         # display synoptic composite
         st.markdown(
@@ -150,16 +155,17 @@ def read_variable(varname, date_obj):
     # To make parsing the date easier, convert it into a datetime object
     # and get it into various formats
     yyyy = date_obj.year
+    yyyymmdd = date_obj.strftime('%Y%m%d')
 
     filepath_html   = "http://10.28.49.118:8080/thredds/dodsC/CFSR/%s/%s.%s.0p5.anl.nc.html"%(yyyy,'%s',yyyy)
     filepath_local  = "http://10.28.49.118:8080/thredds/dodsC/CFSR/%s/%s.%s.0p5.anl.nc"%(yyyy,'%s',yyyy)
-    filepath_remote = "http://thredds.atmos.albany.edu:8080/thredds/dodsC/CFSR/%s/%s.%s.0p5.anl.nc"%(yyyy,'%s',yyyy)
+    filepath_remote = "https://tangjian%%40cma.gov.cn:051087908986@rda.ucar.edu/thredds/dodsC/files/g/ds094.0/%s/cdas1.%s.pgrbanl.tar"%(yyyy,yyyymmdd)
 
     result = requests.get(filepath_html%(varname))
     if result.status_code == 200:
         data = xr.open_dataset(filepath_local%(varname))
     else:
-        data = xr.open_dataset(filepath_remote%(varname))
+        data = xr.open_dataset(filepath_remote)
     data = data.sel(time=date_obj)
 
     return data
@@ -173,77 +179,153 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
         date_obj (datetime): a datetime object
     """
 
-    # construct sub region
-    sub_region = {'lon':slice(map_region[0], map_region[1]),
-                  'lat':slice(map_region[2], map_region[3])}
+    if int(date_obj.year) >= 2020:      # add rda.ucar.edu data source by tangjian.
+        st.info('从rda.ucar.edu载入CFSR数据(1x1度, Waiting ~30s.)')
 
-    # Subset and load data
-    subdata = {}
+        # construct sub region
+        sub_region = {'lon':slice(map_region[0], map_region[1]),
+                      'lat':slice(map_region[3], map_region[2])}
 
-    # wind field
-    my_bar = st.progress(0)
-    data = read_variable('u', date_obj)
-    subdata['u200'] = data['u'].sel(lev=200, **sub_region).load()      ; my_bar.progress(4)
-    subdata['u500'] = data['u'].sel(lev=500, **sub_region).load()      ; my_bar.progress(8)
-    subdata['u700'] = data['u'].sel(lev=700, **sub_region).load()      ; my_bar.progress(12)
-    subdata['u850'] = data['u'].sel(lev=850, **sub_region).load()      ; my_bar.progress(16)
-    subdata['u925'] = data['u'].sel(lev=925, **sub_region).load()      ; my_bar.progress(20)
-    data = read_variable('v', date_obj)
-    subdata['v200'] = data['v'].sel(lev=200, **sub_region).load()      ; my_bar.progress(24)
-    subdata['v500'] = data['v'].sel(lev=500, **sub_region).load()      ; my_bar.progress(28)
-    subdata['v700'] = data['v'].sel(lev=700, **sub_region).load()      ; my_bar.progress(32)
-    subdata['v850'] = data['v'].sel(lev=850, **sub_region).load()      ; my_bar.progress(36)
-    subdata['v925'] = data['v'].sel(lev=925, **sub_region).load()      ; my_bar.progress(40)
+        # Subset and load data
+        subdata = {}
+        
+        # wind field
+        my_bar = st.progress(0)
+        data = read_variable('u-component_of_wind_isobaric', date_obj)
+        subdata['u200'] = data['u-component_of_wind_isobaric'].sel(isobaric1=20000.0, **sub_region).load()             ; my_bar.progress(4)
+        subdata['u500'] = data['u-component_of_wind_isobaric'].sel(isobaric1=50000.0, **sub_region).load()             ; my_bar.progress(8)
+        subdata['u700'] = data['u-component_of_wind_isobaric'].sel(isobaric1=70000.0, **sub_region).load()             ; my_bar.progress(12)
+        subdata['u850'] = data['u-component_of_wind_isobaric'].sel(isobaric1=85000.0, **sub_region).load()             ; my_bar.progress(16)
+        subdata['u925'] = data['u-component_of_wind_isobaric'].sel(isobaric1=92500.0, **sub_region).load()             ; my_bar.progress(20)
+        data = read_variable('v-component_of_wind_isobaric', date_obj)                                                 
+        subdata['v200'] = data['v-component_of_wind_isobaric'].sel(isobaric1=20000.0, **sub_region).load()             ; my_bar.progress(24)
+        subdata['v500'] = data['v-component_of_wind_isobaric'].sel(isobaric1=50000.0, **sub_region).load()             ; my_bar.progress(28)
+        subdata['v700'] = data['v-component_of_wind_isobaric'].sel(isobaric1=70000.0, **sub_region).load()             ; my_bar.progress(32)
+        subdata['v850'] = data['v-component_of_wind_isobaric'].sel(isobaric1=85000.0, **sub_region).load()             ; my_bar.progress(36)
+        subdata['v925'] = data['v-component_of_wind_isobaric'].sel(isobaric1=92500.0, **sub_region).load()             ; my_bar.progress(40)
+        
+        # vertical velocity field
+        data = read_variable('Vertical_velocity_pressure_isobaric', date_obj)
+        subdata['w700'] = data['Vertical_velocity_pressure_isobaric'].sel(isobaric1=70000.0, **sub_region).load()      ; my_bar.progress(45)
+        
+        # pressure on pv surface
+        data = read_variable('Pressure_potential_vorticity_surface', date_obj)
+        subdata['pres_pv2'] = data['Pressure_potential_vorticity_surface'].sel(potential_vorticity_surface=2.0E-6, **sub_region).load()   ; my_bar.progress(50)
+        subdata['pres_pv2'].metpy.convert_units('hPa')
+        
+        # geopotential height
+        data = read_variable('Geopotential_height_isobaric', date_obj)
+        subdata['gh200'] = data['Geopotential_height_isobaric'].sel(isobaric1=20000.0, **sub_region).load()  ; my_bar.progress(55)
+        subdata['gh500'] = data['Geopotential_height_isobaric'].sel(isobaric1=50000.0, **sub_region).load()  ; my_bar.progress(60)
+        subdata['gh700'] = data['Geopotential_height_isobaric'].sel(isobaric1=70000.0, **sub_region).load()  ; my_bar.progress(62)
+        
+        # high temperature
+        data = read_variable('Temperature_isobaric', date_obj)
+        subdata['t500'] = data['Temperature_isobaric'].sel(isobaric1=50000.0, **sub_region).load()           ; my_bar.progress(64)
+        subdata['t700'] = data['Temperature_isobaric'].sel(isobaric1=70000.0, **sub_region).load()           ; my_bar.progress(66)
+        subdata['t850'] = data['Temperature_isobaric'].sel(isobaric1=85000.0, **sub_region).load()           ; my_bar.progress(68)
+        subdata['t925'] = data['Temperature_isobaric'].sel(isobaric1=92500.0, **sub_region).load()           ; my_bar.progress(70)
+        subdata['t500'] = subdata['t500'].metpy.convert_units('degC')
+        subdata['t700'] = subdata['t700'].metpy.convert_units('degC')
+        subdata['t850'] = subdata['t850'].metpy.convert_units('degC')
+        subdata['t925'] = subdata['t925'].metpy.convert_units('degC')
+        
+        # high moisture field
+        data = read_variable('Specific_humidity_isobaric', date_obj)
+        subdata['q700'] = data['Specific_humidity_isobaric'].sel(isobaric1=70000.0, **sub_region).load()   ; my_bar.progress(75)
+        subdata['q850'] = data['Specific_humidity_isobaric'].sel(isobaric1=85000.0, **sub_region).load()   ; my_bar.progress(80)
+        subdata['q925'] = data['Specific_humidity_isobaric'].sel(isobaric1=92500.0, **sub_region).load()   ; my_bar.progress(85)
+        
+        # mean sea level pressure
+        data = read_variable('Pressure_msl', date_obj)
+        subdata['mslp'] = data['Pressure_msl'].sel(**sub_region).load()                                    ; my_bar.progress(90)
+        subdata['mslp'] = subdata['mslp'].metpy.convert_units('hPa')
+        subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)
+        
+        # precipitable water
+        data = read_variable('Precipitable_water_entire_atmosphere_single_layer', date_obj)
+        subdata['pwat'] = data['Precipitable_water_entire_atmosphere_single_layer'].sel(**sub_region).load()         ; my_bar.progress(100)
+        
+        # surface temperature, 2018-, this data is wrong.
+        #data = read_variable('tsfc', date_obj)
+        #subdata['tsfc'] = data['tsfc'].sel(**sub_region).load()         ; my_bar.progress(100)
+        #subdata['tsfc'].metpy.convert_units('degC')
+    else:
+        st.info('从10.28.49.118本地服务载入CFSR数据(0.5x0.5度, Waiting ~30s.)')
 
-    # vertical velocity field
-    data = read_variable('w', date_obj)
-    subdata['w700'] = data['w'].sel(lev=700, **sub_region).load()      ; my_bar.progress(45)
+        # construct sub region
+        sub_region = {'lon':slice(map_region[0], map_region[1]),
+                      'lat':slice(map_region[2], map_region[3])}
 
-    # pressure on pv surface
-    data = read_variable('pres_pv', date_obj)
-    subdata['pres_pv2'] = data['pres_pv'].sel(lev=2.0E-6, **sub_region).load()   ; my_bar.progress(50)
-    subdata['pres_pv2'].metpy.convert_units('hPa')
-
-    # geopotential height
-    data = read_variable('g', date_obj)
-    subdata['gh200'] = data['g'].sel(lev=200, **sub_region).load()  ; my_bar.progress(55)
-    subdata['gh500'] = data['g'].sel(lev=500, **sub_region).load()  ; my_bar.progress(60)
-    subdata['gh700'] = data['g'].sel(lev=700, **sub_region).load()  ; my_bar.progress(62)
-
-    # high temperature
-    data = read_variable('t', date_obj)
-    subdata['t500'] = data['t'].sel(lev=500, **sub_region).load()   ; my_bar.progress(64)
-    subdata['t700'] = data['t'].sel(lev=700, **sub_region).load()   ; my_bar.progress(66)
-    subdata['t850'] = data['t'].sel(lev=850, **sub_region).load()   ; my_bar.progress(68)
-    subdata['t925'] = data['t'].sel(lev=925, **sub_region).load()   ; my_bar.progress(70)
-    subdata['t500'].metpy.convert_units('degC')
-    subdata['t700'].metpy.convert_units('degC')
-    subdata['t850'].metpy.convert_units('degC')
-    subdata['t925'].metpy.convert_units('degC')
-    
-    # high moisture field
-    data = read_variable('q', date_obj)
-    subdata['q700'] = data['q'].sel(lev=700, **sub_region).load()   ; my_bar.progress(75)
-    subdata['q850'] = data['q'].sel(lev=850, **sub_region).load()   ; my_bar.progress(80)
-    subdata['q925'] = data['q'].sel(lev=925, **sub_region).load()   ; my_bar.progress(85)
-
-    # mean sea level pressure
-    data = read_variable('pmsl', date_obj)
-    subdata['mslp'] = data['pmsl'].sel(**sub_region).load()         ; my_bar.progress(90)
-    subdata['mslp'].metpy.convert_units('hPa')
-
-    # precipitable water
-    data = read_variable('pwat', date_obj)
-    subdata['pwat'] = data['pwat'].sel(**sub_region).load()         ; my_bar.progress(100)
-    subdata['pwat'].metpy.convert_units('mm')
-
-    # surface temperature, 2018-, this data is wrong.
-    #data = read_variable('tsfc', date_obj)
-    #subdata['tsfc'] = data['tsfc'].sel(**sub_region).load()         ; my_bar.progress(100)
-    #subdata['tsfc'].metpy.convert_units('degC')
+        # Subset and load data
+        subdata = {}
+        
+        # wind field
+        my_bar = st.progress(0)
+        data = read_variable('u', date_obj)
+        subdata['u200'] = data['u'].sel(lev=200, **sub_region).load()      ; my_bar.progress(4)
+        subdata['u500'] = data['u'].sel(lev=500, **sub_region).load()      ; my_bar.progress(8)
+        subdata['u700'] = data['u'].sel(lev=700, **sub_region).load()      ; my_bar.progress(12)
+        subdata['u850'] = data['u'].sel(lev=850, **sub_region).load()      ; my_bar.progress(16)
+        subdata['u925'] = data['u'].sel(lev=925, **sub_region).load()      ; my_bar.progress(20)
+        data = read_variable('v', date_obj)
+        subdata['v200'] = data['v'].sel(lev=200, **sub_region).load()      ; my_bar.progress(24)
+        subdata['v500'] = data['v'].sel(lev=500, **sub_region).load()      ; my_bar.progress(28)
+        subdata['v700'] = data['v'].sel(lev=700, **sub_region).load()      ; my_bar.progress(32)
+        subdata['v850'] = data['v'].sel(lev=850, **sub_region).load()      ; my_bar.progress(36)
+        subdata['v925'] = data['v'].sel(lev=925, **sub_region).load()      ; my_bar.progress(40)
+        
+        # vertical velocity field
+        data = read_variable('w', date_obj)
+        subdata['w700'] = data['w'].sel(lev=700, **sub_region).load()      ; my_bar.progress(45)
+        
+        # pressure on pv surface
+        data = read_variable('pres_pv', date_obj)
+        subdata['pres_pv2'] = data['pres_pv'].sel(lev=2.0E-6, **sub_region).load()   ; my_bar.progress(50)
+        subdata['pres_pv2'].metpy.convert_units('hPa')
+        
+        # geopotential height
+        data = read_variable('g', date_obj)
+        subdata['gh200'] = data['g'].sel(lev=200, **sub_region).load()  ; my_bar.progress(55)
+        subdata['gh500'] = data['g'].sel(lev=500, **sub_region).load()  ; my_bar.progress(60)
+        subdata['gh700'] = data['g'].sel(lev=700, **sub_region).load()  ; my_bar.progress(62)
+        
+        # high temperature
+        data = read_variable('t', date_obj)
+        subdata['t500'] = data['t'].sel(lev=500, **sub_region).load()   ; my_bar.progress(64)
+        subdata['t700'] = data['t'].sel(lev=700, **sub_region).load()   ; my_bar.progress(66)
+        subdata['t850'] = data['t'].sel(lev=850, **sub_region).load()   ; my_bar.progress(68)
+        subdata['t925'] = data['t'].sel(lev=925, **sub_region).load()   ; my_bar.progress(70)
+        subdata['t500'] = subdata['t500'].metpy.convert_units('degC')
+        subdata['t700'] = subdata['t700'].metpy.convert_units('degC')
+        subdata['t850'] = subdata['t850'].metpy.convert_units('degC')
+        subdata['t925'] = subdata['t925'].metpy.convert_units('degC')
+        
+        # high moisture field
+        data = read_variable('q', date_obj)
+        subdata['q700'] = data['q'].sel(lev=700, **sub_region).load()   ; my_bar.progress(75)
+        subdata['q850'] = data['q'].sel(lev=850, **sub_region).load()   ; my_bar.progress(80)
+        subdata['q925'] = data['q'].sel(lev=925, **sub_region).load()   ; my_bar.progress(85)
+        
+        # mean sea level pressure
+        data = read_variable('pmsl', date_obj)
+        subdata['mslp'] = data['pmsl'].sel(**sub_region).load()         ; my_bar.progress(90)
+        subdata['mslp'] = subdata['mslp'].metpy.convert_units('hPa')
+        subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)
+        
+        # precipitable water
+        data = read_variable('pwat', date_obj)
+        subdata['pwat'] = data['pwat'].sel(**sub_region).load()         ; my_bar.progress(100)
+        subdata['pwat'].metpy.convert_units('mm')
+        
+        # surface temperature, 2018-, this data is wrong.
+        #data = read_variable('tsfc', date_obj)
+        #subdata['tsfc'] = data['tsfc'].sel(**sub_region).load()         ; my_bar.progress(100)
+        #subdata['tsfc'].metpy.convert_units('degC')
 
     return subdata
 
 
 if __name__ == "__main__":
     main()
+
