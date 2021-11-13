@@ -34,7 +34,7 @@ from metpy.units import units
 
 from nmc_met_graphics.cmap.cm import gradient
 from nmc_met_graphics.plot.util import add_mslp_label
-from nmc_met_graphics.plot.china_map import add_china_map_2cartopy
+from nmc_met_graphics.plot.mapview import add_china_map_2cartopy
 from nmc_met_graphics.magics import dynamics, thermal, pv, moisture
 
 

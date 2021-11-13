@@ -178,7 +178,7 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
     Args:
         date_obj (datetime): a datetime object
     """
-
+    
     if int(date_obj.year) >= 2020:      # add rda.ucar.edu data source by tangjian.
         st.info('从rda.ucar.edu载入CFSR数据(1x1度, Waiting ~30s.)')
 
@@ -240,7 +240,7 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
         data = read_variable('Pressure_msl', date_obj)
         subdata['mslp'] = data['Pressure_msl'].sel(**sub_region).load()                                    ; my_bar.progress(90)
         subdata['mslp'] = subdata['mslp'].metpy.convert_units('hPa')
-        subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)
+        #subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)    ; 会造成mslp与其它变量的纬度信息排序不一致, 绘图出现矛盾
         
         # precipitable water
         data = read_variable('Precipitable_water_entire_atmosphere_single_layer', date_obj)
@@ -311,7 +311,7 @@ def load_variables(date_obj, map_region=[50, 160, 6, 60]):
         data = read_variable('pmsl', date_obj)
         subdata['mslp'] = data['pmsl'].sel(**sub_region).load()         ; my_bar.progress(90)
         subdata['mslp'] = subdata['mslp'].metpy.convert_units('hPa')
-        subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)
+        #subdata['mslp'] = subdata['mslp'].sortby('lat', ascending=True)    ; 会造成mslp与其它变量的纬度信息排序不一致, 绘图出现矛盾
         
         # precipitable water
         data = read_variable('pwat', date_obj)
