@@ -96,9 +96,20 @@ def  main():
         #     date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
         #     elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
         # Also support cmadaas server
-        obs_data = cmadaas_obs_by_time(
-            date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
-            elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
+        # SURF_CHN_MUL_DAY(_N) 接口里
+        # 20220405000000
+        # PRE_Time_0808 指5日08-6日08
+        # PRE_Time_2020，是指4日20-5日20
+        if data_time == '00':
+            # 20
+            obs_data = cmadaas_obs_by_time(
+                date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
+                elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_2020,WIN_S_Max")
+        else:
+            # 0520--- 05 get 0508-0608
+            obs_data = cmadaas_obs_by_time(
+                date_obj.strftime('%Y%m%d000000'), data_code="SURF_CHN_MUL_DAY", sta_levels="011,012,013",
+                elements="Station_Id_C,Lat,Lon,Alti,TEM_Max,TEM_Min,VIS_Min,PRE_Time_0808,WIN_S_Max")
         if obs_data is not None:
             state.img3 = draw_maps.draw_observation(obs_data, date_obj, map_region)
         else:
@@ -163,6 +174,7 @@ def read_variable(varname, date_obj):
 
     result = requests.get(filepath_html%(varname))
     if result.status_code == 200:
+#    if result.status_code == 200 and yyyy != 2014:
         data = xr.open_dataset(filepath_local%(varname))
     else:
         data = xr.open_dataset(filepath_remote)
